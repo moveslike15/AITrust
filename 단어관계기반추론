@@ -1,0 +1,10 @@
+#예제: 남자 + (여배우 - 배우) = 여자
+
+# In [41]:
+
+from konlpy.utils import pprint
+pprint(model.wv.most_similar(positive=tokenize(u'남자 여배우'), negative=tokenize(u'배우'), topn=1))
+
+#결과 [('여자/Noun', 0.8009182214736938)]
+
+http://w.elnn.kr/
