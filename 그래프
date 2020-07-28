@@ -65,3 +65,22 @@ model.save('word2vec.model')
 
 # 저장한 모델을 읽어서 이용한다.
 model = Word2Vec.load('word2vec.model')
+
+
+
+#다음에서 가져온 그래프그리기:sallys.space/blog/2018/04/24/gensim-word2vec-embedding/
+
+ viz_words = 2000
+ word_vector = np.concatenate((model.wv.vectors[:viz_words//2,:], model.wv.vectors[11489:11489+viz_words//2,:]), axis=0)
+ tsne = TSNE(n_components=3)
+ embed_tsne = tsne.fit_transform(word_vector)
+
+fig, ax = plt.subplots(figsize=(15,15))
+for i in range(viz_words):
+    if model.wv.index2word[i][-1] == 'N':
+        plt.scatter(*embed_tsne[i,:],s=2,alpha=0.6, color='r')
+        #plt.annotate(model.wv.index2word[i], (embed_tsne[i,0], embed_tsne[i,1]), alpha=0.6, fontsize=7)
+    else:
+        plt.scatter(*embed_tsne[i,:],s=2,alpha=0.6,color='b')
+        #plt.annotate(model.wv.index2word[i], (embed_tsne[i,0], embed_tsne[i,1]), alpha=0.6, fontsize=7)
+plt.savefig("seperate_15000_nolabel.png")
