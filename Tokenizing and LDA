@@ -1,0 +1,125 @@
+### 1. Tokenizing and NLP result and Model save as file ###
+
+import csv
+from konlpy.tag import Okt
+from gensim.models import word2vec
+
+
+#데이터 저장 파일 불러오기
+datafile = open("D://oned//OneDrive - SNU//AITrust//Data//trial.txt", 'r', encoding='utf-8')
+
+# 데이터파일을 파이썬 리스트로 만들어야 okt에서 오류 없이 돌아간다.
+preparinglist = csv.reader(datafile, delimiter='\t') #tsv 파일이어야 글 안에 콤마 때문에 오류 안남 코맘 이후가 짤리는 문제 생김
+datalist = list(preparinglist)
+datafile.close()
+# print(datalist) # 출력해보기
+
+# 트위터 형태소 분석기 로드 as tagger
+tagger = Okt()
+
+# 형태소 분석 결과인 result를 만들기(선언?) 나중에 [] 안을 채워넣게 됨
+result = []
+# 텍스트를 한줄씩 처리합니다
+for line in datalist:
+# 형태소 분석, 단어 기본형 사용
+# line[0]은 각 row의 0번째 column을 읽는다는 뜻
+    poslist = tagger.pos(line[0], norm=True, stem=True) #pos는 품사정보 태깅하는 명령어 morph와의 차이점을 잘 모르겠음
+    #cleaned라는 이름으로 공간 만들어놓고 clean up 결과를 저장할 것
+    cleaned = []
+    for word in poslist:
+         #Josa”, “Eomi”, “'Punctuation” 는 제외하고 처리. pos tagging 결과에 쓰인 범주 표시 단어를 넣어주면 지워짐 [1]은 위에서 poslist 생성할 때 단어는 column 0에 품사정보는 column 1에 저장되기 때문임
+        if not word[1] in ["Josa","Eomi","Punctuation", "URL", "Email","Foreign"]:
+            cleaned.append(word[0]) # column 1에 있는 단어가 우측에 속하지 않을 경우 column 0에 있는 단어를 cleaned에 첨부함
+    #형태소 사이에 공백 " "  을 넣습니다. 그리고 양쪽 공백을 지웁니다.
+    cleaned2 = (" ".join(cleaned)).strip() 
+    result.append(cleaned2) # result 안에 cleaned 2를 넣어줌
+    #print(result) #출력해보기
+
+# for line 아래가 아니면 각 줄이 다 돌아가지 않음 
+# 아래의 결과 저장에서는 다 돌아가고 들어가는데 어떻게 된건지 모르겠음
+
+# 형태소들을 별도의 파일로 저장 합니다.
+with open("newstrial.nlp",'w', encoding='utf-8') as fp:
+    fp.write("\n".join(result)) #\n은 줄을 없애주는 것으로 알고 있는데... 이걸로 하는건가.
+
+# Word2Vec 모델 만들기 위아래에서 제작된 .nlp 파일과 .model 파일을 통해서 나중에 다른 파일에서 word2vec을 돌릴 수 있게 된다. 
+wData = word2vec.LineSentence("newstrial.nlp")
+wModel =word2vec.Word2Vec(wData, size=200, window=10, hs=1, min_count=2, sg=1)
+wModel.save("newstrial.model")
+print("Word2Vec Modeling finished") #시간 오래 걸릴때 됐는지 안됐는지 확인가능
+
+### 2. LDA and Visualization ###
+
+# 필요한 패키지 로딩
+import pandas as pd
+from pandas import DataFrame  as df
+import numpy as np
+from collections import Counter
+from konlpy.tag import Okt
+okt = Okt()
+import matplotlib.pyplot as plt
+import re 
+import gensim
+from gensim import corpora, models
+from gensim.models import CoherenceModel 
+import csv
+from konlpy.tag import Okt
+from gensim.models import word2vec
+
+
+# 1.부에서 필요없는 품사 및 단어 제거한 전처리 끝난 데이터 파일이 생성되어 있다. 그 파일을 다시 불러와서 토크나이징해야 lda 딕셔너리로 쓸 수 있다. .nlp 파일을 utf-8 tsv 파일로 만든다. 그리고 그 파일을 주소로 불러온다.
+corpus_path = "D://oned//OneDrive - SNU//AITrust//Data//newstrialnlped.txt"
+
+# 잘은 모르겠지만 다시 일단 문서가 된 자료를 딕셔너리로 쓸 수 있게 토크나이징하는 것이다. 여기서는 품사정보가 필요가 없다. 그렇다면 여기서 morph로 썼으면 되는 것일까?
+class Documents:
+    def __init__(self, path):
+        self.path = path
+    def __iter__(self):
+        with open(self.path, encoding='utf-8') as f:
+            for doc in f:
+                yield doc.strip().split()
+
+token_doc = Documents(corpus_path)
+
+#딕셔너리 만들기
+dictionary = gensim.corpora.Dictionary(token_doc)
+#딕셔너리 길이 확인
+print('dictionary size : %d' % len(dictionary)) # dictionary size : 37987
+
+# 빈도수 낮은 단어 사전에서 제외하기 min_count = 부분에 숫자 입력하면 됨
+from collections import Counter
+
+min_count = 3
+word_counter = Counter((word for words in token_doc for word in words))
+removal_word_idxs = {
+    dictionary.token2id[word] for word, count in word_counter.items()
+    if count < min_count
+}
+
+dictionary.filter_tokens(removal_word_idxs) # 모름
+dictionary.compactify() # 모름
+print('dictionary size : %d' % len(dictionary)) # dictionary size : 10354
+
+corpus = [dictionary.doc2bow(text) for text in token_doc] # LDA 돌릴 코퍼스로 처리하는 것인듯
+
+NUM_TOPICS = 20 #20개의 토픽, k=20
+ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word=dictionary, passes=15) # passes는 학습 횟수라고 함
+topics = ldamodel.print_topics(num_words=10) # 주제를 표현하는 단어 갯수 상위 n개 선언
+for topic in topics:
+    print(topic)
+
+import pyLDAvis.gensim #시각화
+vis = pyLDAvis.gensim.prepare(ldamodel, corpus, dictionary)
+pyLDAvis.save_html(vis, "LDA_Visualization.html")
+
+### 3. Word2Vec 실행 ###
+
+# 새 파일을 만들어서 1.에서 만든 .nlp; .model 파일을 불러와서 w2v 분석을 수행할 수 있다. w2v 학습은 매우 오래 걸리므로 실제 분석시에 이걸 한번 해놓고서 하는 것이 좋을 것이다.
+from gensim.models import word2vec
+
+model = word2vec.Word2Vec.load("newstrial.model")
+
+# 가장 유사한 단어 고르기
+print(model.wv.most_similar(positive=["고용"]))
+print(model.wv.most_similar(positive=["가쁘"]))
+
