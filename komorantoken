@@ -1,0 +1,61 @@
+### 1. Tokenizing and NLP result and Model save as file ###
+
+import csv
+import pandas as pd
+from pandas import DataFrame
+from konlpy.tag import Komoran
+from gensim.models import word2vec
+
+
+#데이터 저장 파일 불러오기
+datafile = open("D://oned//OneDrive - SNU//AITrust//Data//trial.txt", 'r', encoding='utf-8')
+
+# 데이터파일을 파이썬 리스트로 만들어야 komoran에서 오류 없이 돌아간다.
+preparinglist = csv.reader(datafile, delimiter='\t') #tsv 파일이어야 글 안에 콤마 때문에 오류 안남 코맘 이후가 짤리는 문제 생김
+datalist = list(preparinglist)
+datafile.close()
+# print(datalist) # 출력해보기
+
+# 트위터 형태소 분석기 로드 as tagger
+tagger = Komoran()
+
+# 형태소 분석 결과인 result를 만들기(선언?) 나중에 [] 안을 채워넣게 됨
+result = []
+# 텍스트를 한줄씩 처리합니다
+for line in datalist:
+# 형태소 분석, 단어 기본형 사용
+# line[0]은 각 row의 0번째 column을 읽는다는 뜻
+    poslist = tagger.pos(line[0], flatten=True) #pos는 품사정보 태깅하는 명령어 morph와의 차이점을 잘 모르겠음
+    #cleaned라는 이름으로 공간 만들어놓고 clean up 결과를 저장할 것
+    cleaned = []
+    for word in poslist:
+         #Josa”, “Eomi”, “'Punctuation” 는 제외하고 처리. pos tagging 결과에 쓰인 범주 표시 단어를 넣어주면 지워짐 [1]은 위에서 poslist 생성할 때 단어는 column 0에 품사정보는 column 1에 저장되기 때문임
+        if not word[1] in ["IC", "JK", "JKS", "JKC", "JKG", "JKO", "JKB", "JKV", "JKQ", "JX", "JC", "E", "EP", "EF", "EC", "ETN", "ETM", "XP", "XPN", "XS", "XSN", "XSV", "XSA", "XR", "SF", "SP", "SS", "SE", "SO"]:
+            cleaned.append(word[0]) # column 1에 있는 단어가 우측에 속하지 않을 경우 column 0에 있는 단어를 cleaned에 첨부함
+    #형태소 사이에 공백 " "  을 넣습니다. 그리고 양쪽 공백을 지웁니다.
+    cleaned2 = (" ".join(cleaned)).strip() 
+    result.append(cleaned2) # result 안에 cleaned 2를 넣어줌
+#    print(result) #출력해보기
+
+
+
+### 결과 csv로 저장하기 ###
+#   csvfile = open("komorantrial.csv", "w", newline="")
+#   
+#   csvwriter = csv.writer(csvfile)
+#   for row in poslist:
+#       csvwriter.writerow(row)
+#   
+#   csvfile.close
+# for line 안이 아니면 각 줄이 다 돌아가지 않음 
+# 안의 결과 저장에서는 다 돌아가고 들어가는데 어떻게 된건지 모르겠음
+
+### 형태소들을 별도의 파일로 저장 합니다.
+with open("newstrial.nlp",'w', encoding='utf-8') as fp:
+    fp.write("\n".join(result)) #\n은 줄을 없애주는 것으로 알고 있는데... 이걸로 하는건가. --> 여긴 파일 만들면서 for문의 각 줄들을 줄바꿈해주는 것인듯
+
+# Word2Vec 모델 만들기 위아래에서 제작된 .nlp 파일과 .model 파일을 통해서 나중에 다른 파일에서 word2vec을 돌릴 수 있게 된다. 
+wData = word2vec.LineSentence("newstrial.nlp")
+wModel =word2vec.Word2Vec(wData, size=200, window=10, hs=1, min_count=2, sg=1)
+wModel.save("newstrial.model")
+print("Word2Vec Modeling finished") #시간 오래 걸릴때 됐는지 안됐는지 확인가능
