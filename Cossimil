@@ -1,0 +1,23 @@
+
+#두 단어 유사도 계산 나중에 정안되면 단어 하나씩 다넣어보면서 할 수도 있음
+# 단어 여러개는 안되나?
+#각 기관과 인공지능 사이의 유사성, 신뢰와의 유사성
+
+
+
+#In [11]:
+model.wv.similarity('actor', 'actress')
+#0.8800922413447049
+#In [12]:
+model.wv.similarity('he', 'she')
+#0.8576631643407555
+
+
+단어 더하기 빼기
+
+from konlpy.utils import pprint
+pprint(model.wv.most_similar(positive=tokenize(u'남자 여배우'), negative=tokenize(u'배우'), topn=1))
+
+
+
+#신뢰 - 불신 사이의 코사인유사도는 어떻게?
