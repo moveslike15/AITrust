@@ -58,34 +58,8 @@ for line in datalist:
 
     result.append(redi) # result 안에 마지막으로 처리된 한줄씩을 넣어줌
 
-#resultdr = sum(result, [])
-#print(resultdr)
 
-# 그냥 하나로 합치기
-#sd = []
-#for line in result:
-#    s = " ".join(result)
-#    sd.append(s)
-
-print(result)
-# 출력 결과: 123자장면짬뽕탕수육물만두팔보채
-
-
-## 요소들 사이에 쉼표 넣기 (구분자는 콤마와 공백 1개)
-#s = ", ".join(food)
-#print s
-## 출력 결과: 123, 자장면, 짬뽕, 탕수육, 물만두, 팔보채
-#
-#
-#print(resultdr2) #출력해보기
-
-### STOPWORDS ###
-
-
-#result2 = []
-
-
-# result2 = [word for word in word_tokens if not word in stop_words]
+#print(result)
 
 
 ### 쪼개기 + 품사값 결과 csv로 저장하기 ###
