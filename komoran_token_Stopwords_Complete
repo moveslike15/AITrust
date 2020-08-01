@@ -1,0 +1,112 @@
+### 1. Tokenizing and NLP result and Model save as file ###
+
+import csv
+import pandas as pd
+from pandas import DataFrame
+from konlpy.tag import Komoran
+from gensim.models import word2vec
+from nltk.corpus import stopwords 
+from nltk.tokenize import word_tokenize
+
+#데이터 저장 파일 불러오기
+datafile = open("C://aitrust//data//trial.txt", 'r', encoding='utf-8')
+
+# 데이터파일을 파이썬 리스트로 만들어야 komoran에서 오류 없이 돌아간다.
+preparinglist = csv.reader(datafile, delimiter='\t') #tsv 파일이어야 글 안에 콤마 때문에 오류 안남 코맘 이후가 짤리는 문제 생김
+datalist = list(preparinglist)
+datafile.close()
+# print(datalist) # 출력해보기
+
+# 트위터 형태소 분석기 로드 as tagger
+
+#tagger = Komoran()
+komoud = Komoran(userdic='C://aitrust//data//userdic.txt')
+# 형태소 분석 결과인 result를 만들기(선언?) 나중에 [] 안을 채워넣게 됨
+
+
+# 불용어 넣기
+# 트라이얼 불용어사전 stop_words = "한겨레21 레드 조자룡 최민식"
+stop_words = "기자 중앙일보 디지털타임스 게티이미지 .co .kr www goodnews kmib 국민일보 .com 연합뉴스 뉴스1 hankyung 서울경제 한경 sedaily 서울경제썸 전자신문 etnews ddaily sportsseoul heraldbiz heraldcorp yna mbn 연합뉴스tv sbs sbscnbc kr 헤럴드경제 서울신문 파이낸셜뉴스 디지털데일리 머니투데이 커버스토리 한국경제신문 한국비즈니스 아시아경제 지디넷코리아 chosunbiz 조선일보 chosun 부산일보 copyrights MBC뉴스 앵커 ◀ ◆ ■ ● ○ ▶ ▲ 동아일보 donga news1 기고 = 뉴시스"
+stop_words = stop_words.split(' ')
+
+
+
+result = []
+# 텍스트를 한줄씩 처리합니다
+for line in datalist:
+# 형태소 분석, 단어 기본형 사용
+# line[0]은 각 row의 0번째 column을 읽는다는 뜻
+    poslist = komoud.pos(line[0], flatten=True, join=False) #pos는 품사정보 태깅하는 명령어 morph와의 차이점을 잘 모르겠음
+    #cleaned라는 이름으로 공간 만들어놓고 clean up 결과를 저장할 것
+    cleaned = []
+    for word in poslist:
+         #Josa”, “Eomi”, “'Punctuation” 는 제외하고 처리. pos tagging 결과에 쓰인 범주 표시 단어를 넣어주면 지워짐 [1]은 위에서 poslist 생성할 때 단어는 column 0에 품사정보는 column 1에 저장되기 때문임
+        if not word[1] in ["VV", "VA", "NP", "NNB", "NR", "VX", "VCP", "VCN", "MM", "MAG", "MAJ", "IC", "JK", "JKS", "JKC", "JKG", "JKO", "JKB", "JKV", "JKQ", "JX", "JC", "E", "EP", "EF", "EC", "ETN", "ETM", "XP", "XPN", "XS", "XSN", "XSV", "XSA", "XR", "SF", "SP", "SS", "SE", "SO", "SW", "SN", "NA"]:
+            cleaned.append(word[0]) # column 1에 있는 단어가 우측에 속하지 않을 경우 column 0에 있는 단어를 cleaned에 첨부함
+    #형태소 사이에 공백 " "  을 넣습니다. 그리고 양쪽 공백을 지웁니다. 이걸 해줘야 str 스트링이 되어서 다음 단계에 집어넣을 수 있음
+    cleaned2 = (" ".join(cleaned)).strip() 
+    
+    # 여기부터 불용어 처리
+    word_tokens = word_tokenize(cleaned2)
+    # 불용어 처리는 리스트로 할 수 없고 리스트 내부를 한줄씩 해줘야 하기 때문에 상기 for line 안에 들어가야 하는 것. 칸[] 선언해주고 그 안에 한줄씩 집어넣도록 처리하면 됨
+    stopped = []
+    for w in word_tokens: 
+        if w not in stop_words: 
+            stopped.append(w) 
+    #차원축소 이걸 해줘야 다음 단계에 str이 되어서 모델에 집어넣을 수 있음 " "은 빈칸으로 구분하겠다는 뜻임 W2V하려면 빈칸으로 구분되어야 함
+    redi = (" ".join(stopped)).strip() 
+
+    result.append(redi) # result 안에 마지막으로 처리된 한줄씩을 넣어줌
+
+#resultdr = sum(result, [])
+#print(resultdr)
+
+# 그냥 하나로 합치기
+#sd = []
+#for line in result:
+#    s = " ".join(result)
+#    sd.append(s)
+
+print(result)
+# 출력 결과: 123자장면짬뽕탕수육물만두팔보채
+
+
+## 요소들 사이에 쉼표 넣기 (구분자는 콤마와 공백 1개)
+#s = ", ".join(food)
+#print s
+## 출력 결과: 123, 자장면, 짬뽕, 탕수육, 물만두, 팔보채
+#
+#
+#print(resultdr2) #출력해보기
+
+### STOPWORDS ###
+
+
+#result2 = []
+
+
+# result2 = [word for word in word_tokens if not word in stop_words]
+
+
+### 쪼개기 + 품사값 결과 csv로 저장하기 ###
+#   csvfile = open("komorantrial.csv", "w", newline="")
+#   
+#   csvwriter = csv.writer(csvfile)
+#   for row in poslist:
+#       csvwriter.writerow(row)
+#   
+#   csvfile.close
+# for line 안이 아니면 각 줄이 다 돌아가지 않음 
+# 안의 결과 저장에서는 다 돌아가고 들어가는데 어떻게 된건지 모르겠음
+
+
+### 형태소들을 별도의 파일로 저장 합니다.
+with open("stopwtrial.nlp",'w', encoding='utf-8') as fp:
+    fp.write("\n".join(result)) #\n은 줄을 없애주는 것으로 알고 있는데... 이걸로 하는건가. --> 여긴 파일 만들면서 for문의 각 줄들을 줄바꿈해주는 것인듯
+
+
+# Word2Vec 모델 만들기 위아래에서 제작된 .nlp 파일과 .model 파일을 통해서 나중에 다른 파일에서 word2vec을 돌릴 수 있게 된다. 
+#wData = word2vec.LineSentence("stopwtrial.nlp")
+#wModel = word2vec.Word2Vec(wData, size=200, window=10, hs=1, min_count=50, sg=1)
+#wModel.save("stopwtrial.model")
+print("Word2Vec Modeling finished") #시간 오래 걸릴때 됐는지 안됐는지 확인가능
