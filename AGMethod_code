@@ -2,8 +2,14 @@ import gensim
 import pandas as pd
 import numpy as np
 import sklearn
+from sklearn import metrics
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+
 
 def normalize(vector):
     normalized_vector = vector / np.linalg.norm(vector)
@@ -26,18 +32,31 @@ def project_word(model, pos_lst, neg_lst, projecting_words):
     result_df = result_df.sort_values(by = ['good_to_bad'], ascending= False)
     return (result_df)
 
-pos_lst = ['good', 'better', 'right', 'satisfactory', 'positive', 'effective', 'sufficient', 'excellent', 'success']
-neg_lst = ['bad', 'worse', 'wrong', 'unsatisfactory', 'negative', 'ineffective', 'insufficient', 'failed', 'failure']
 
-quant_words = ["measure", 'result', 'performance', 'hypothesis', 'finding']
-qual_words = ["political", "social", "historical", 'theory', 'context']
-total_words = quant_words + qual_words
+#여기다가 신뢰 불신 키워드를 넣고
+pos_lst = ['신뢰', '정확도']
+neg_lst = ['불신']
+#pos_lst = ['good', 'better', 'right', 'satisfactory', 'positive', 'effective', 'sufficient', 'excellent', 'success']
+#neg_lst = ['bad', 'worse', 'wrong', 'unsatisfactory', 'negative', 'ineffective', 'insufficient', 'failed', 'failure']
 
-qual_model = gensim.models.Word2Vec.load("qual_model")
-qual_proj = project_word(qual_model, pos_lst, neg_lst, total_words)
 
-quant_model = gensim.models.Word2Vec.load("quant_model")
-quant_proj = project_word(quant_model, pos_lst, neg_lst, total_words)
+#여기다가 기관들을 넣으면 되나?
+quant_words = ["국회", "대기업", "경찰"]
+total_words = quant_words
+
+#quant_words = ["measure", 'result', 'performance', 'hypothesis', 'finding']
+#qual_words = ["political", "social", "historical", 'theory', 'context']
+
+
+
+#qual_model = gensim.models.Word2Vec.load("qual_model")
+#qual_proj = project_word(qual_model, pos_lst, neg_lst, total_words)
+
+quant_model = gensim.models.Word2Vec.load("ainews2019v3_lda_novvva.model") #여기다가 내 모델
+myvocab = list(quant_model.wv.vocab)
+quant_proj = project_word(quant_model, pos_lst, neg_lst, myvocab) #보캡에 넣은 것들을 다 보여주고 있음 와 이걸 하면 신뢰와 불신에 관한 내 단어들을 전부다 볼 수 있다. 이걸 한 다음에 제도들만 추리면 되는거고
+#quant_model = gensim.models.Word2Vec.load("quant_model")
+#quant_proj = project_word(quant_model, pos_lst, neg_lst, total_words)
 
 def compute_corr(proj_1, proj_2):
     proj_1['order'] = [i for i in range(1, len(proj_1) + 1)]
@@ -50,14 +69,37 @@ def compute_corr(proj_1, proj_2):
     rank_corr = proj_1_alphabet_order['order'].corr(proj_2_alphabet_order['order'], method = 'spearman')
     return (pearson_corr, rank_corr)
 
-compute_corr(qual_proj, quant_proj)
+#print(compute_corr(qual_proj, quant_proj))
 
-fig_2_word_lst = []
-with open("Fig_2_words.tsv", 'r') as f:
-    for line in f:
-        fig_2_word_lst.append(line.rstrip("\n"))
+#print(qual_proj)
+print(quant_proj)
 
-quant_fig_2 = project_word(quant_model, pos_lst, neg_lst, fig_2_word_lst)
-qual_fig_2 = project_word(qual_model, pos_lst, neg_lst, fig_2_word_lst)
-
-compute_corr(quant_fig_2, qual_fig_2)
+#fig_2_word_lst = []
+#with open("Fig_2_words.tsv", 'r') as f:
+#    for line in f:
+#        fig_2_word_lst.append(line.rstrip("\n"))
+#
+#quant_fig_2 = project_word(quant_model, pos_lst, neg_lst, fig_2_word_lst)
+#qual_fig_2 = project_word(qual_model, pos_lst, neg_lst, fig_2_word_lst)
+#
+#print(compute_corr(quant_fig_2, qual_fig_2))
+#
+#
+#df = pd.DataFrame(X_tsne, index=myvocab, columns=['x', 'y'])
+#
+#fig = plt.figure()
+##fig.set_size_inches(40, 20)
+#ax = fig.add_subplot(1, 1, 1)
+##
+#ax.scatter(df['x'], df['y'])
+##
+##
+#plt.rcParams["font.family"] = 'NanumBarunGothic'
+##plt.rcParams["font.size"] = 20
+##plt.rcParams["figure.figsize"] = (14,4)
+##
+##
+#for word, pos in df.iterrows():
+#    ax.annotate(word, pos, fontsize=10)
+#plt.show()
+#강동현 짱짱맨
