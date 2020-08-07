@@ -1,0 +1,80 @@
+import functools
+import operator
+from gensim.models import LdaModel
+import numpy as np
+from pprint import pprint
+import pandas as pd
+from pandas import DataFrame  as df
+import collections
+from collections import Counter
+import matplotlib.pyplot as plt
+import re 
+import gensim
+from gensim import corpora, models
+from gensim.models import CoherenceModel 
+import csv
+
+corpus_path = "2015newsdata.nlp"
+
+# 잘은 모르겠지만 다시 일단 문서가 된 자료를 딕셔너리로 쓸 수 있게 토크나이징하는 것이다. 여기서는 품사정보가 필요가 없다. 그렇다면 여기서 morph로 썼으면 되는 것일까?
+class Documents:
+    def __init__(self, path):
+        self.path = path
+    def __iter__(self):
+        with open(self.path, encoding='utf-8') as f:
+            for doc in f:
+                yield doc.strip().split()
+
+token_doc = Documents(corpus_path)
+
+#딕셔너리 만들기
+mydictionary = gensim.corpora.Dictionary(token_doc)
+
+#딕셔너리 길이 확인
+print('dictionary size : %d' % len(mydictionary)) # dictionary size : 37987
+
+# 빈도수 낮은 단어 사전에서 제외하기 4300의 0.1%
+
+min_count = 5
+word_counter = Counter((word for words in token_doc for word in words))
+removal_word_idxs = {
+    mydictionary.token2id[word] for word, count in word_counter.items()
+    if count < min_count
+}
+
+mydictionary.filter_tokens(removal_word_idxs) # 모름
+mydictionary.compactify() # 모름
+print('dictionary size : %d' % len(mydictionary)) # 줄어들어야 함
+
+corpus = [mydictionary.doc2bow(text) for text in token_doc] # LDA 돌릴 코퍼스로 처리하는 것인듯
+
+#myldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = 20, id2word=mydictionary, passes=15) # passes는 학습 횟수라고 함
+
+mymodel = LdaModel.load('2015newsdata.lda')
+
+result = []
+for line in corpus:
+	getdoctopics = mymodel.get_document_topics(line)
+	dict(getdoctopics)
+	result.append(dict(getdoctopics))
+
+#print(result)
+sumdict = dict(functools.reduce(operator.add,map(collections.Counter, result))) 
+print(sumdict)
+listsumdict = [sumdict]
+resultdf = pd.DataFrame(listsumdict)
+resultdf.to_csv('topicfrequencysum.csv', encoding='utf-8-sig')
+
+#sum_val = 0
+#for dic in result:
+#    sum_val += dic[1]
+#    
+#print('sum_val = ', sum_val)
+
+	#print(getdoctopics)
+	#result.append(getdoctopics)
+#print(result)
+
+
+#print(result)
+#
