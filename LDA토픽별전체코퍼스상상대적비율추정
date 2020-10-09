@@ -78,3 +78,6 @@ resultdf.to_csv('topicfrequencysum.csv', encoding='utf-8-sig')
 
 #print(result)
 #
+
+
+
